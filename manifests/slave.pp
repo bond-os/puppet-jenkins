@@ -211,7 +211,7 @@ class jenkins::slave (
       $defaults_group = 'root'
       $manage_user_home = true
 
-      if $::systemd_available == 'true' {
+      if $::systemd_available == true {
 
         file { "${slave_home}/start-slave.sh":
           ensure  => 'file',
@@ -222,13 +222,13 @@ class jenkins::slave (
         }
 
         file { "${::systemd::params::unit_path}/jenkins-slave.service":
-          ensure => 'file',
-          mode   => '0755',
-          owner  => 'root',
-          group  => 'root',
+          ensure  => 'file',
+          mode    => '0755',
+          owner   => 'root',
+          group   => 'root',
           content => template("${module_name}/${service_name}.service.erb"),
-          before => Service[$service_name],
-          notify => Exec['systemd-daemon-reload']
+          before  => Service[$service_name],
+          notify  => Exec['systemd-daemon-reload']
         }
 
         file { '/etc/init.d/jenkins-slave':
@@ -325,14 +325,14 @@ class jenkins::slave (
     Service['jenkins-slave']
   }
 
-  if $::systemd_available == 'true' {
+  if $::systemd_available == true {
     service { 'jenkins-slave':
       ensure     => $ensure,
       name       => $service_name,
       enable     => $enable,
       hasstatus  => true,
       hasrestart => true,
-      require => Exec['systemd-daemon-reload']
+      require    => Exec['systemd-daemon-reload']
     }
   }
   else {
