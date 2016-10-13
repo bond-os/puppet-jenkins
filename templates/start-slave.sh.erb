@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
 
-source <%= @defaults_location %>/jenkins-slave 
+source <%= @defaults_location %>/jenkins-slave
+<% if scope.lookupvar('::kernel') == 'Darwin' %>
+
 java -jar <%= @slave_home %>/<%= @client_jar %> $JENKINS_SLAVE_ARGS
+
+<% elsif scope.lookupvar('::kernel') == 'Linux' %>
+if [ -x /sbin/runuser ] ; then
+	RUNUSER=runuser
+else
+	RUNUSER=su
+fi
+
+exec $RUNUSER - $JENKINS_SLAVE_USER -c "$JAVA $JAVA_ARGS -jar $JENKINS_SLAVE_JAR $JENKINS_SLAVE_ARGS"
+
+<% end %>

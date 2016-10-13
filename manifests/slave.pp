@@ -209,14 +209,45 @@ class jenkins::slave (
       $defaults_group = 'root'
       $manage_user_home = true
 
-      file { '/etc/init.d/jenkins-slave':
-        ensure => 'file',
-        mode   => '0755',
-        owner  => 'root',
-        group  => 'root',
-        source => "puppet:///modules/${module_name}/jenkins-slave.${::osfamily}",
-        notify => Service['jenkins-slave'],
+      include systemd
+
+      if $::systemd_available == 'true' {
+
+        file { "${slave_home}/start-slave.sh":
+          ensure  => 'file',
+          content => template("${module_name}/start-slave.sh.erb"),
+          mode    => '0755',
+          owner   => 'root',
+          group   => 'root',
+        }
+
+        file { "${::systemd::params::unit_path}/jenkis-slave.service":
+          ensure => 'file',
+          mode   => '0755',
+          owner  => 'root',
+          group  => 'root',
+          content => template("${module_name}/${service_name}.service.erb"),
+          before => Service[$service_name],
+          notify => Exec['systemd-daemon-reload']
+        }
+
+        file { '/etc/init.d/jenkins-slave':
+          ensure => absent,
+        }
+
       }
+      else {
+        file { '/etc/init.d/jenkins-slave':
+          ensure => 'file',
+          mode   => '0755',
+          owner  => 'root',
+          group  => 'root',
+          source => "puppet:///modules/${module_name}/jenkins-slave.${::osfamily}",
+          notify => Service['jenkins-slave'],
+        }
+      }
+
+
     }
     'Darwin': {
       $service_name     = 'org.jenkins-ci.slave.jnlp'
@@ -294,13 +325,26 @@ class jenkins::slave (
     Service['jenkins-slave']
   }
 
-  service { 'jenkins-slave':
-    ensure     => $ensure,
-    name       => $service_name,
-    enable     => $enable,
-    hasstatus  => true,
-    hasrestart => true,
+  if $::systemd_available == 'true' {
+    service { 'jenkins-slave':
+      ensure     => $ensure,
+      name       => $service_name,
+      enable     => $enable,
+      hasstatus  => true,
+      hasrestart => true,
+      after => Exec['systemd-daemon-reload']
+    }
   }
+  else {
+    service { 'jenkins-slave':
+      ensure     => $ensure,
+      name       => $service_name,
+      enable     => $enable,
+      hasstatus  => true,
+      hasrestart => true,
+    }
+  }
+
 
   if $manage_slave_user and $manage_client_jar {
     User['jenkins-slave_user']->
