@@ -207,7 +207,7 @@ class jenkins::slave (
   case $::kernel {
     'Linux': {
       $service_name   = 'jenkins-slave'
-      $defaults_user  = 'root'
+      $defaults_user  = $slave_user
       $defaults_group = 'root'
       $manage_user_home = true
 
