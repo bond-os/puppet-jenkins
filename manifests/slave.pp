@@ -151,6 +151,8 @@ class jenkins::slave (
   validate_string($source)
   validate_string($proxy_server)
 
+  include systemd
+
   $client_jar = "swarm-client-${version}-jar-with-dependencies.jar"
   $client_url = $source ? {
     undef   => "https://repo.jenkins-ci.org/releases/org/jenkins-ci/plugins/swarm-client/${version}/",
@@ -209,8 +211,6 @@ class jenkins::slave (
       $defaults_group = 'root'
       $manage_user_home = true
 
-      include systemd
-
       if $::systemd_available == 'true' {
 
         file { "${slave_home}/start-slave.sh":
@@ -221,7 +221,7 @@ class jenkins::slave (
           group   => 'root',
         }
 
-        file { "${::systemd::params::unit_path}/jenkis-slave.service":
+        file { "${::systemd::params::unit_path}/jenkins-slave.service":
           ensure => 'file',
           mode   => '0755',
           owner  => 'root',
@@ -332,7 +332,7 @@ class jenkins::slave (
       enable     => $enable,
       hasstatus  => true,
       hasrestart => true,
-      after => Exec['systemd-daemon-reload']
+      require => Exec['systemd-daemon-reload']
     }
   }
   else {
