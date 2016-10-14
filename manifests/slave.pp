@@ -211,7 +211,7 @@ class jenkins::slave (
       $defaults_group = 'root'
       $manage_user_home = true
 
-      if $::systemd_available == true {
+      if $::systemd_available {
 
         file { "${slave_home}/start-slave.sh":
           ensure  => 'file',
@@ -223,7 +223,7 @@ class jenkins::slave (
 
         file { "${::systemd::params::unit_path}/jenkins-slave.service":
           ensure  => 'file',
-          mode    => '0755',
+          mode    => '0644',
           owner   => 'root',
           group   => 'root',
           content => template("${module_name}/${service_name}.service.erb"),
@@ -325,7 +325,7 @@ class jenkins::slave (
     Service['jenkins-slave']
   }
 
-  if $::systemd_available == true {
+  if $::systemd_available {
     service { 'jenkins-slave':
       ensure     => $ensure,
       name       => $service_name,
