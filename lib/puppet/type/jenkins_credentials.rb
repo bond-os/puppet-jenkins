@@ -1,6 +1,6 @@
-require 'puppet_x/jenkins/type/cli'
+require_relative  '../../puppet/x/jenkins/type/cli'
 
-PuppetX::Jenkins::Type::Cli.newtype(:jenkins_credentials) do
+Puppet::X::Jenkins::Type::Cli.newtype(:jenkins_credentials) do
   @doc = <<-EOS
     Manage Jenkins' credentials
 
@@ -32,6 +32,7 @@ PuppetX::Jenkins::Type::Cli.newtype(:jenkins_credentials) do
     defaultto :UsernamePasswordCredentialsImpl
     newvalues(:UsernamePasswordCredentialsImpl,
               :BasicSSHUserPrivateKey,
+              :ConduitCredentialsImpl,
               :StringCredentialsImpl)
   end
 
@@ -76,6 +77,14 @@ PuppetX::Jenkins::Type::Cli.newtype(:jenkins_credentials) do
     desc 'name of the java class implimenting the key store - CertificateCredentialsImpl'
   end
 
+  newproperty(:token) do
+    desc 'conduit token - ConduitCredentialsImpl'
+  end
+
+  newproperty(:url) do
+    desc 'URL of phabriactor installation - ConduitCredentialsImpl'
+  end
+
   # require all authentication & authorization related types
   [
     :jenkins_user,
@@ -88,4 +97,4 @@ PuppetX::Jenkins::Type::Cli.newtype(:jenkins_credentials) do
       end
     end
   end
-end # PuppetX::Jenkins::Type::Cli.newtype
+end # Puppet::X::Jenkins::Type::Cli.newtype

@@ -251,11 +251,11 @@ class Actions {
   /////////////////////////
   // create or update user from JSON
   /////////////////////////
-  void user_update() { // or create
+  void user_update(String jsonfile) { // or create
     // parse JSON doc from stdin
     def slurper = new groovy.json.JsonSlurper()
-    def text = bindings.stdin.text
-    def conf = slurper.parseText(text)
+    def conf = slurper.parse(new File(jsonfile))
+
 
     // a user id is required
     def id = conf['id']
@@ -388,7 +388,7 @@ class Actions {
       util.requirePlugin('ssh-credentials')
 
       def key_source
-      if (private_key.startsWith('-----BEGIN')) {
+      if (private_key =~ /^(\s*)-----BEGIN(.*)/) {
         key_source = this.class.classLoader.loadClass('com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey$DirectEntryPrivateKeySource').newInstance(private_key)
       } else {
         key_source = this.class.classLoader.loadClass('com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey$FileOnMasterPrivateKeySource').newInstance(private_key)
@@ -456,7 +456,7 @@ class Actions {
     current_credentials['password'] = credentials.password.plainText
     } else {
       current_credentials['private_key'] = credentials.privateKey
-      current_credentials['passphrase'] = credentials.passphrase.plainText
+      current_credentials['passphrase'] = credentials.passphrase?.plainText
     }
 
     def builder = new groovy.json.JsonBuilder(current_credentials)
@@ -507,7 +507,11 @@ class Actions {
           info['description'] = cred.description
           info['username'] = cred.username
           info['private_key'] = cred.privateKey
-          info['passphrase'] = cred.passphrase.plainText
+          info['passphrase'] = cred.passphrase?.plainText
+          break
+        case 'com.dabsquared.gitlabjenkins.connection.GitLabApiTokenImpl':
+          info['apiToken'] = cred.apiToken.plainText
+          info['description'] = cred.description
           break
         case 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl':
           info['description'] = cred.description
@@ -555,13 +559,12 @@ class Actions {
    * modify an existing credentials specified by a JSON document passed via
    * the stdin
   */
-  void credentials_update_json() {
+  void credentials_update_json(String jsonfile) {
     def j = Jenkins.getInstance()
 
     // parse JSON doc from stdin
     def slurper = new groovy.json.JsonSlurper()
-    def text = bindings.stdin.text
-    def conf = slurper.parseText(text)
+    def conf = slurper.parse(new File(jsonfile))
 
     def cred = null
     switch (conf['impl']) {
@@ -766,6 +769,22 @@ class Actions {
   }
 
   ////////////////////////
+  // get_authorization_strategyname
+  ////////////////////////
+  void get_authorization_strategyname() {
+
+    def authorizationStrategyName = ''
+    def j = Jenkins.getInstance()
+    def strategy = j.getAuthorizationStrategy()
+    if ((String)strategy.getClass().getName() == 'hudson.security.FullControlOnceLoggedInAuthorizationStrategy' ) {
+      authorizationStrategyName = 'full_control'
+    } else if ((String)strategy.getClass().getName() == 'hudson.security.AuthorizationStrategy$Unsecured' ) {
+      authorizationStrategyName = 'unsecured'
+    }
+    out.println(authorizationStrategyName)
+  }
+
+  ////////////////////////
   // get_authorization_strategy
   ////////////////////////
   void get_authorization_strategy() {
@@ -824,7 +843,7 @@ class Actions {
   ////////////////////////
   // set_jenkins_instance
   ////////////////////////
-  void set_jenkins_instance() {
+  void set_jenkins_instance(String jsonfile) {
     def j = Jenkins.getInstance()
 
     def setup = { info ->
@@ -844,8 +863,7 @@ class Actions {
 
     // parse JSON doc from stdin
     def slurper = new groovy.json.JsonSlurper()
-    def text = bindings.stdin.text
-    def conf = slurper.parseText(text)
+    def conf = slurper.parse(new File(jsonfile))
 
     // each key in the hash is a method on the Jenkins singleton.  The key's
     // value is an object to instantiate and pass to the method.  (currently,

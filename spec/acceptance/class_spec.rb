@@ -7,13 +7,12 @@ describe 'jenkins class' do
     it 'should work with no errors' do
       pp = <<-EOS
       class {'jenkins':
-        cli => true,
+        cli_remoting_free => true,
+        cli               => true,
       }
       EOS
 
-      # Run it twice and test for idempotency
-      apply(pp, :catch_failures => true)
-      apply(pp, :catch_changes => true)
+      apply2(pp)
     end
 
     describe port(8080) do
@@ -25,6 +24,19 @@ describe 'jenkins class' do
 
     describe file("#{$libdir}/jenkins-cli.jar") do
       it { should be_file }
+      it { should be_readable.by('owner') }
+      it { should be_writable.by('owner') }
+      it { should be_readable.by('group') }
+      it { should be_readable.by('others') }
+    end
+
+    describe file("#{$sysconfdir}/jenkins") do
+      it { should be_file }
+      if fact('osfamily') == 'Debian'
+        it { should contain 'AJP_PORT="-1"' }
+      else
+        it { should contain 'JENKINS_AJP_PORT="-1"' }
+      end
     end
 
     describe service('jenkins') do
@@ -32,19 +44,37 @@ describe 'jenkins class' do
       it { should be_enabled }
     end
 
-  end
+    if fact('osfamily') == 'RedHat' and $systemd
+      describe file('/etc/systemd/system/jenkins.service') do
+        it { should be_file }
+        it { should contain "ExecStart=#{libdir}/jenkins-run" }
+      end
+      describe file('/etc/init.d/jenkins') do
+        it { should_not exist }
+      end
+      describe service('jenkins') do
+        it { should be_running.under('systemd') }
+      end
+    else
+      describe file('/etc/systemd/system/jenkins.service') do
+        it { should_not exist }
+      end
+      describe file('/etc/init.d/jenkins') do
+        it { should be_file }
+      end
+    end
+  end # default parameters
 
   context 'executors' do
     it 'should work with no errors' do
       pp = <<-EOS
       class {'jenkins':
-        executors => 42,
+        executors         => 42,
+        cli_remoting_free => true,
       }
       EOS
 
-      # Run it twice and test for idempotency
-      apply(pp, :catch_failures => true)
-      apply(pp, :catch_changes => true)
+      apply2(pp)
     end
 
     describe port(8080) do
@@ -67,13 +97,12 @@ describe 'jenkins class' do
       it 'should work with no errors' do
         pp = <<-EOS
         class {'jenkins':
-          slaveagentport => 7777,
+          slaveagentport    => 7777,
+          cli_remoting_free => true,
         }
         EOS
 
-        # Run it twice and test for idempotency
-        apply(pp, :catch_failures => true)
-        apply(pp, :catch_changes => true)
+        apply2(pp)
       end
 
       describe port(8080) do

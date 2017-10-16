@@ -19,9 +19,7 @@ describe 'jenkins_credentials' do
             }
           EOS
 
-          # Run it twice and test for idempotency
-          apply(pp, :catch_failures => true)
-          apply(pp, :catch_failures => true)
+          apply2(pp)
         end
 
         describe file('/var/lib/jenkins/credentials.xml') do
@@ -31,6 +29,34 @@ describe 'jenkins_credentials' do
           it { should contain '<id>9b07d668-a87e-4877-9407-ae05056e32ac</id>' }
         end
       end
+
+      context 'ConduitCredentialsImpl' do
+        it 'should work with no errors' do
+          pending('puppet_helper.groovy implementation missing, see https://github.com/jenkinsci/puppet-jenkins/issues/753')
+          pp = base_manifest + <<-EOS
+            jenkins_credentials { '002224bd-60cb-49f3-a314-d0f73f82233d':
+              ensure      => 'present',
+              description => 'phabricator-jenkins-conduit',
+              domain      => undef,
+              impl        => 'ConduitCredentialsImpl',
+              token       => '{PRIVATE TOKEN}',
+              url         => 'https://my-phabricator-repo.com',
+            }
+          EOS
+
+          apply2(pp)
+        end
+        # XXX need to properly compare the XML doc
+        # trying to match anything other than the id this way might match other
+        # credentials
+        describe file('/var/lib/jenkins/credentials.xml') do
+          it {
+            pending('puppet_helper.groovy implementation missing, see https://github.com/jenkinsci/puppet-jenkins/issues/753')
+            should contain '<id>002224bd-60cb-49f3-a314-d0f73f82233d</id>'
+          }
+        end
+      end
+
 
       context 'BasicSSHUserPrivateKey' do
         it 'should work with no errors' do
@@ -42,16 +68,14 @@ describe 'jenkins_credentials' do
               description => 'bar',
               domain      => undef,
               impl        => 'BasicSSHUserPrivateKey',
-              passphrase  => '',
+              passphrase  => undef,
               private_key => '-----BEGIN RSA PRIVATE KEY----- ...',
               scope       => 'SYSTEM',
               username    => 'robin',
             }
           EOS
 
-          # Run it twice and test for idempotency
-          apply(pp, :catch_failures => true)
-          apply(pp, :catch_failures => true)
+          apply2(pp)
         end
 
         describe file('/var/lib/jenkins/credentials.xml') do
@@ -79,9 +103,7 @@ describe 'jenkins_credentials' do
             }
           EOS
 
-          # Run it twice and test for idempotency
-          apply(pp, :catch_failures => true)
-          apply(pp, :catch_failures => true)
+          apply2(pp)
         end
 
         describe file('/var/lib/jenkins/credentials.xml') do
@@ -109,9 +131,7 @@ describe 'jenkins_credentials' do
             }
           EOS
 
-          # Run it twice and test for idempotency
-          apply(pp, :catch_failures => true)
-          apply(pp, :catch_failures => true)
+          apply2(pp)
         end
 
         describe file('/var/lib/jenkins/credentials.xml') do
